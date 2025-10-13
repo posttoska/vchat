@@ -36,9 +36,9 @@ function Title({ setMessages }: Props) {
 
     return (
         //  reset convertation with button press
-        <div className='flex justify-between items-center w-full p4 bg-gray-900 text-white font-bold shadow'>
+        <div className='flex justify-between items-center w-full p4 bg-blue-900 text-white font-bold shadow'>
             
-            <div>Владиславий Панкорезов Чат</div>
+            <div className='p-2'>Владиславий Панкорезов Чат</div>
             
             <button 
                 onClick={resetConversation}
