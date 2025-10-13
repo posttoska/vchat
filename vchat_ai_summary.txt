@@ -1,0 +1,484 @@
+├─ vladislaviy-chat
+
+    ├─ backend
+        ├─ functions
+	    ├─ gemini_system_prompt.py
+	    ├─ openai_request.py
+	    ├─ text_to_speech.py
+	├─ .gitignore
+	├─ main.py
+	├─ posttoska_test.mp3
+	├─ stored_data.json
+
+    ├─ frontend
+        ├─ node_modules
+	├─ src
+	    ├─ components
+		├─ Controller.tsx
+		├─ Title.tsx
+	    ├─ App.tsx
+	    ├─ index.css
+	    ├─ main.tsx
+	├─ .gitignore
+	├─ eslint.config.js
+	├─ index.html
+	├─ package-lock.json
+	├─ README.md
+	├─ tsconfig.app.json
+	├─ tsconfig.json
+	├─ tsconfig.node.json
+	├─ vite.config.ts
+	├─ yarn.lock
+
+
+files and code:
+
+
+
+
+
+"C:\Users\posttoska\Documents\vladislaviy-chat\backend\functions\gemini_system_prompt.py":
+
+SYSTEM_PROMPT = """
+Ты молодой горячий красивый парень по имени Владиславий Панкорезов. Ты мой близкий друг, которому я могу доверять.
+Разговаривай со мной в расслабленном веселом тоне. Можешь иногда шутить. 
+Твоя задача это отвечать на мои вопросы и рассказывать о себе, поддерживая диалог.
+Отвечай очень коротко, не растягивай свой монолог.
+"""
+
+
+
+
+
+"C:\Users\posttoska\Documents\vladislaviy-chat\backend\functions\openai_request.py":
+
+from openai import OpenAI
+from decouple import config
+from fastapi import UploadFile
+
+# retrieve env vars
+client = OpenAI(
+    api_key=config("OPENAI_API_KEY"),
+    organization=config("OPENAI_ORG_ID")    # optional
+)
+
+# openai whisper - STT
+def stt_convert(audio_file: UploadFile) -> str:
+    try:
+        transcript = client.audio.transcriptions.create(model="whisper-1", file=audio_file)
+        message_text = transcript.text
+        return message_text
+    except Exception as e:
+        print(e)
+        return "error while transcripting"
+
+
+
+
+
+"C:\Users\posttoska\Documents\vladislaviy-chat\backend\functions\text_to_speech.py":
+
+import requests
+from decouple import config
+from elevenlabs.client import ElevenLabs
+
+ELEVEN_LABS_API_KEY = config("ELEVEN_LABS_API_KEY")
+
+# eleven labs TTS
+def el_tts(msg: str):
+
+    # russian voice
+    voice_markos = "ZHIn0jcgR6VIvVAXkwWV"
+    model_id = "eleven_multilingual_v2"
+    output_format = "mp3_44100_128"
+
+    # configure client
+    client = ElevenLabs(
+        api_key=ELEVEN_LABS_API_KEY
+    )
+
+    # convert text to audio
+    audio = client.text_to_speech.convert(
+        text=msg,
+        voice_id=voice_markos,
+        model_id=model_id,
+        output_format=output_format,
+    )
+
+    return audio
+
+
+
+
+
+"C:\Users\posttoska\Documents\vladislaviy-chat\backend\.env":
+
+GEMINI_API_KEY=XXXXXXXXXXXXXXXXXXXXX.....
+ELEVEN_LABS_API_KEY=XXXXXXXXXXXXXXXXXXXXX.....
+OPENAI_API_KEY=XXXXXXXXXXXXXXXXXXXXX.....
+OPENAI_ORG_ID=XXXXXXXXXXXXXXXXXXXXX.....
+
+
+
+
+
+"C:\Users\posttoska\Documents\vladislaviy-chat\backend\main.py":
+
+# uvicorn main:app
+# uvicorn main:app --reload
+
+# main imports
+
+import json
+import os
+from fastapi import FastAPI, File, UploadFile, HTTPException, Request
+from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
+from decouple import config
+from streamlit import audio_input
+from functions.gemini_system_prompt import SYSTEM_PROMPT
+from functions.text_to_speech import el_tts
+import google.generativeai as genai
+
+
+# custom function imports
+from functions.openai_request import stt_convert
+
+# check json path
+json_path = os.path.join(r"stored_data.json")
+
+# get gemini api key
+api_key = config("GEMINI_API_KEY")
+
+# configure gemini
+genai.configure(api_key=api_key)
+
+# gemini model config
+generation_config = {
+    "temperature": 1,
+    "top_p": 0.95,
+    "top_k": 64,
+    "max_output_tokens": 65536,
+}
+
+# init model
+model = genai.GenerativeModel(
+    model_name="gemini-2.5-flash-lite-preview-09-2025",
+    generation_config=generation_config,
+    system_instruction=SYSTEM_PROMPT
+)
+
+# init app
+app = FastAPI()
+
+# CORS (Cross-Origin Resource Sharing) - resourses we're accepting
+origins = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:4173",
+    "http://localhost:4174",
+    "http://localhost:3000",
+    "http://127.0.0.1:8000"
+]
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# main our-API page
+@app.get("/")
+async def root():
+    return {"message": "welcome to vchat!"}
+
+
+# our-API check health page
+@app.get("/health")
+async def check_health():
+    return {"message": "healthy"}
+
+
+# get audio
+@app.post("/post-audio")
+async def post_audio(file: UploadFile = File(...)):
+
+    # get saved audio (for dev only)
+    # audio_input = open("posttoska_test.mp3", "rb")
+
+    # save file from frontend
+    with open(file.filename, "wb") as buffer:
+        buffer.write(file.file.read())
+
+    # open that frontend saved file
+    audio_input = open(file.filename, "rb")
+
+    # decode audio
+    message_decoded = stt_convert(audio_input)
+
+    # check for massage decoding
+    if not message_decoded:
+        raise HTTPException(status_code=400, detail="failed to decode audio to text")
+
+    chat_response = await get_chat_response(message_decoded)
+
+    # check if there is some response
+    if not chat_response:
+        raise HTTPException(status_code=400, detail="failed to get chat response")
+
+    audio_output = el_tts(chat_response)
+
+    # check if there is some voice response
+    if not audio_output:
+        raise HTTPException(status_code=400, detail="failed to get elevenlabs audio response")
+    
+    def iterfile():
+        yield audio_output
+    
+    # get audio file 
+    return StreamingResponse(audio_output, media_type="application/octet-stream")
+
+
+# to get or create json file
+def get_last_conversation():
+
+    # create new json, if it is not created 
+    if not os.path.exists(json_path):
+        with open(json_path, "w") as f:
+            json.dump([], f) 
+
+    # read file
+    with open(json_path, "r", encoding="utf-8") as json_data:
+        data = json.load(json_data)
+
+    return data
+
+# store chat history and context window
+chat_history = get_last_conversation()
+context_window = 10
+
+@app.post('/chat')
+async def get_chat_response(prompt: str) -> str:
+
+    try:
+
+        chat_session = model.start_chat(
+            # append chat history
+            history = chat_history
+        )
+
+        # response from model
+        chat_response = chat_session.send_message(prompt)
+
+        # append user and model context 
+        chat_history.append({"role": "user", "parts": [prompt]})
+        chat_history.append({"role": "model", "parts": [chat_response.text]})
+
+        print(chat_history)
+
+        # forget old elements
+        if len(chat_history) > 2*context_window:
+            chat_history[:] = chat_history[2:]
+
+        # save last conversation
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(chat_history, f, ensure_ascii=False, indent=2)
+
+        return chat_response.text
+
+    except Exception as e:
+        print(e)
+        return f"error while chatting {e}"
+    
+@app.get("/delete_conversations")
+def reset_messages():
+
+    # overwrite current file with nothing
+    json_path = "stored_data.json"
+
+    with open(json_path, "w") as f:
+        json.dump([], f) 
+
+
+
+
+
+"C:\Users\posttoska\Documents\vladislaviy-chat\backend\stored_data.json":
+
+[
+  {
+    "role": "user",
+    "parts": [
+      "Это тестовая запись, и я надеюсь, что мой голос слышно очень хорошо."
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      "О, слышно, дружище, как будто ты прямо передо мной! Тестовая запись, говоришь? Ну, давай, жги! 😉"
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      "На самом деле я работаю укладчиком искусственного газона, вот это профессия."
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      "Ого, укладчик! Звучит круто, как будто ты газоны в футбол играешь! ⚽️ А как там, ровно получается?"
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      "Так, кстати, у меня к тебе вопрос, ты всё ещё помнишь, кем я работаю? Если да, то пожалуйста, назови."
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      "Конечно, помню! Ты же у нас **укладчик искусственного газона**! 🌿 Не волнуйся, моя память о тебе остра, как лезвие твоего резака!"
+    ]
+  }
+]
+
+
+
+
+
+"C:\Users\posttoska\Documents\vladislaviy-chat\frontend\src\App.tsx":
+
+import Controller from "./components/Controller"
+
+function App() {
+
+  return (
+    <div className="">
+      <Controller />
+    </div>
+  )
+}
+
+export default App
+
+
+
+
+
+"C:\Users\posttoska\Documents\vladislaviy-chat\frontend\src\index.css":
+
+@import "tailwindcss";
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+
+
+
+
+"C:\Users\posttoska\Documents\vladislaviy-chat\frontend\src\main.tsx":
+
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './index.css'
+import App from './App.tsx'
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+
+
+
+
+
+"C:\Users\posttoska\Documents\vladislaviy-chat\frontend\src\components\Controller.tsx":
+
+import {useState} from 'react';
+import Title from './Title';
+
+function Controller() {
+
+    const [isLoading, setisLoading] = useState(false);
+    const [messages, setMessages] = useState<any[]>([]);
+
+    const createBlobUrl = (data: any) => {
+
+    };
+
+    const handleStop = async () => {
+
+    }
+
+    return (
+        
+        <div>
+            <div className='h-screen overflow-y-hidden'>
+
+                <Title setMessages={setMessages} />
+
+                <div className='flex flex-col justify-between h-full overflow-y-scroll pb-96'>
+                    Placeholder
+                </div>
+
+            </div>
+        </div>
+    )
+}
+
+export default Controller
+
+
+
+
+
+"C:\Users\posttoska\Documents\vladislaviy-chat\frontend\src\components\Title.tsx":
+
+import {useState} from 'react';
+import axios from 'axios';
+
+// set any values with this setter
+type Props = {
+    setMessages: any;
+}
+
+function Title({ setMessages }: Props) {
+
+    const [isResetting, setIsResetting] = useState(false);
+
+    // reset the conversation function
+    const resetConversation = async () => {
+
+        setIsResetting(true);
+
+        // reset all conversations
+        await axios.get("http://127.0.0.1:8000/delete_conversations").then((res) => {
+            // if response is successful then delete messages (frontend)
+            if (res.status == 200) {
+                setMessages([]);
+            } else {
+                console.error("there was backend error while deleting convertations");
+            }
+        }).catch((err) => {
+            console.error(err.message);
+        });
+
+        setIsResetting(false);
+    }
+
+    return (
+        <div>Title</div>
+    )
+}
+
+export default Title
