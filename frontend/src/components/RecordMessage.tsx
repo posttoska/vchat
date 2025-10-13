@@ -9,47 +9,72 @@ function RecordMessage({ handleStop }: Props) {
 
     // wait stable press
     const TIME_TO_WAIT = 500;
-    const isUpped = useRef<boolean>(false)
+    const isUpped = useRef<boolean>(false);
 
-    // helper function to set isUpped
-    function setIsUpped(ref: React.MutableRefObject<boolean>, valueToSet: boolean) {
-        // set value
-        ref.current = valueToSet;
-    };
+    // check if recording available right now (for short recordings handling)
+    const isRecAvailable = useRef<boolean>(true);
+    const lastTime = useRef<number>(0);
+    const MIN_RECORD_TIME = 1000;
+    
     
     // long click handle when start recording
     function handleOnMouseDown(start: () => void) {
-        // set flag to upped
-        setIsUpped(isUpped, true);
+
+        // record shielding
+        if (isRecAvailable) {
+
+            // set flag to upped
+            isUpped.current = true;
 
 
-        // wait 500 ms anyway
-        setTimeout(() => {
-            // check if button was untouched
-            if (isUpped.current) {
-                // start recoeding
-                start();
-                // set flag to lower
-                setIsUpped(isUpped, false);
-                console.log("start recording...");
-            };
-        
-        // set timeout to 500 ms
-        } , TIME_TO_WAIT)
-
-        
+            // wait 500 ms
+            setTimeout(() => {
+                // check if button was untouched
+                if (isUpped.current) {
+                    // start time measuring
+                    lastTime.current = performance.now();
+                    // start recoeding
+                    start();
+                    // set flag to lower
+                    isUpped.current = false;
+                    console.log("start recording...");
+                };
+            
+            // set timeout to 500 ms
+            } , TIME_TO_WAIT);
+        };
     };
 
     // long click handle when stop recording
     function handleOnMouseUp (stop: () => void) {
-        // if the flag was lowered (recording started) then stop it
-        if (!isUpped.current) {
-            stop();
-            console.log("stop recording...");
-        }
 
-        // set flag to lowered anyway
-        setIsUpped(isUpped, false);
+        // record shielding
+        if (isRecAvailable) {
+            // if the flag was lowered (recording started) then stop it
+            if (!isUpped.current) {
+
+                // make sure recording more than 1 second
+                if (performance.now() - lastTime.current < MIN_RECORD_TIME) {
+                    // if no then shield recording
+                    isRecAvailable.current = false;
+
+                    // wait for 1 sec
+                    setTimeout(() => {
+                        console.log("recording 1 sec minimum");
+                        } , MIN_RECORD_TIME);
+
+                    // then unshield recording
+                    isRecAvailable.current = true;
+                }
+                
+                // stop recording
+                stop();
+                console.log("stop recording...");
+            }
+
+            // set flag to lowered anyway
+            isUpped.current = false;
+        };
     };
 
     
