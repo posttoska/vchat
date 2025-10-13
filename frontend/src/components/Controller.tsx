@@ -22,12 +22,12 @@ function Controller() {
 
                 <Title setMessages={setMessages} />
 
-                <div>
+                <div className='flex items-center justify-center p-2'>
                     <img
-                className="w-24 h-24 rounded-full object-cover shadow"
-				alt="Chat Icon"
-				src="./images/cloudaffle-logo.png"
-				/>
+                    className="w-24 h-24 rounded-full object-cover shadow"
+                    alt="Chat Icon"
+                    src='./vladislaviy.png'
+                    />
                 </div>
 
                 <div className='flex flex-col justify-between h-full overflow-y-scroll pb-96'>
