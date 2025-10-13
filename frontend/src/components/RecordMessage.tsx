@@ -21,7 +21,7 @@ function RecordMessage({ handleStop }: Props) {
     function handleOnMouseDown(start: () => void) {
 
         // record shielding
-        if (isRecAvailable) {
+        if (isRecAvailable.current) {
 
             // set flag to upped
             isUpped.current = true;
@@ -49,7 +49,7 @@ function RecordMessage({ handleStop }: Props) {
     function handleOnMouseUp (stop: () => void) {
 
         // record shielding
-        if (isRecAvailable) {
+        if (isRecAvailable.current) {
             // if the flag was lowered (recording started) then stop it
             if (!isUpped.current) {
 
