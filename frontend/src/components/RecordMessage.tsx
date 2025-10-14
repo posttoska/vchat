@@ -7,14 +7,17 @@ type Props = {
 
 function RecordMessage({ handleStop }: Props) {
 
-    // wait stable press
+    // constants
     const TIME_TO_WAIT = 500;
-    const isUpped = useRef<boolean>(false);
-
-    // check if recording available right now (for short recordings handling)
-    const isRecAvailable = useRef<boolean>(true);
-    const lastTime = useRef<number>(0);
     const MIN_RECORD_TIME = 1000;
+    
+    // flags 
+    const isUpped = useRef<boolean>(false);
+    const isRecAvailable = useRef<boolean>(true);
+
+    // counters
+    const lastTime = useRef<number>(0);
+    overClickerCount = 0;
     
     
     // long click handle when start recording
@@ -26,22 +29,30 @@ function RecordMessage({ handleStop }: Props) {
             // set flag to upped
             isUpped.current = true;
 
+            // count overclicking
+            overClickerCount = overClickerCount + 1
 
-            // wait 500 ms
-            setTimeout(() => {
-                // check if button was untouched
-                if (isUpped.current) {
-                    // start time measuring
-                    lastTime.current = performance.now();
-                    // start recoeding
-                    start();
-                    // set flag to lower
-                    isUpped.current = false;
-                    console.log("start recording...");
-                };
-            
-            // set timeout to 500 ms
-            } , TIME_TO_WAIT);
+            // overclick shielding
+            if (overClickerCount == 1) {
+                // wait 500 ms
+                setTimeout(() => {
+                    // check if button was untouched
+                    if (isUpped.current) {
+                        // start time measuring
+                        lastTime.current = performance.now();
+                        // start recoeding
+                        start();
+                        // set flag to lower
+                        isUpped.current = false;
+                        console.log("start recording...");
+
+                        // reset oveclicker count
+                        overClickerCount = 0;
+                    };
+                
+                // set timeout to 500 ms
+                } , TIME_TO_WAIT);
+            };
         };
     };
 
@@ -61,16 +72,21 @@ function RecordMessage({ handleStop }: Props) {
                     // wait for 1 sec
                     setTimeout(() => {
                         console.log("recording 1 sec minimum");
-                        } , MIN_RECORD_TIME);
 
-                    // then unshield recording
-                    isRecAvailable.current = true;
-                }
+                        // then unshield recording (after 1 sec) and then stop
+                        isRecAvailable.current = true;
+                        stop();
+
+                        } , MIN_RECORD_TIME);
+                    
+                };
                 
-                // stop recording
-                stop();
-                console.log("stop recording...");
-            }
+                // stop if rec is available
+                if (isRecAvailable.current) {
+                    console.log("stop recording...");
+                    stop();
+                };
+            };
 
             // set flag to lowered anyway
             isUpped.current = false;
