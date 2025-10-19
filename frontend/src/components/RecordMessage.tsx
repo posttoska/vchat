@@ -1,11 +1,15 @@
 import { useState, useRef  } from "react";
 import { ReactMediaRecorder } from "react-media-recorder";
+import CHM from './CHM';
 
 type Props = {
     handleStop: any;
 };
 
 function RecordMessage({ handleStop }: Props) {
+
+
+    const some_value = CHM(some_arguments);
 
     // constants
     const TIME_TO_WAIT = 500;
@@ -17,7 +21,6 @@ function RecordMessage({ handleStop }: Props) {
 
     // counters
     const lastTime = useRef<number>(0);
-    overClickerCount = 0;
     
     
     // long click handle when start recording
@@ -30,10 +33,9 @@ function RecordMessage({ handleStop }: Props) {
             isUpped.current = true;
 
             // count overclicking
-            overClickerCount = overClickerCount + 1
 
             // overclick shielding
-            if (overClickerCount == 1) {
+
                 // wait 500 ms
                 setTimeout(() => {
                     // check if button was untouched
@@ -45,14 +47,10 @@ function RecordMessage({ handleStop }: Props) {
                         // set flag to lower
                         isUpped.current = false;
                         console.log("start recording...");
-
-                        // reset oveclicker count
-                        overClickerCount = 0;
                     };
                 
                 // set timeout to 500 ms
                 } , TIME_TO_WAIT);
-            };
         };
     };
 
@@ -106,7 +104,7 @@ function RecordMessage({ handleStop }: Props) {
                 <div className="mt-2">
                     <button
                         onMouseDown={() => handleOnMouseDown(startRecording)} 
-                        onMouseUp={() => handleOnMouseUp(stopRecording)}
+                        onMouseUp={}
                         className="bg-white p-4 rounded-full"
                     >
                         ICON
@@ -120,6 +118,6 @@ function RecordMessage({ handleStop }: Props) {
             )}
         />
     );
-}
+};
 
-export default RecordMessage
+export default RecordMessage;
