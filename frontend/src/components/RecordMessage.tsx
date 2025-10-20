@@ -1,6 +1,5 @@
 import { useState, useRef  } from "react";
 import { ReactMediaRecorder } from "react-media-recorder";
-import CHM from './CHM';
 
 type Props = {
     handleStop: any;
@@ -8,24 +7,52 @@ type Props = {
 
 function RecordMessage({ handleStop }: Props) {
 
-
-    const some_value = CHM(some_arguments);
-
     // constants
     const TIME_TO_WAIT = 500;
     const MIN_RECORD_TIME = 1000;
-    
+
     // flags 
     const isUpped = useRef<boolean>(false);
     const isRecAvailable = useRef<boolean>(true);
-
-    // counters
+    
+    // counters (OOB - out of bounds)
+    const overClickerCount = useRef<number>(0);
+    const OOBCounter = useRef<number>(0);
     const lastTime = useRef<number>(0);
-    
-    
-    // long click handle when start recording
-    function handleOnMouseDown(start: () => void) {
 
+    // states
+    const waitId500 = useRef<number | null>(null);
+
+    // clicker misalignment function 
+    function detectClickerMisalignment(misalignmentValue: number, start: () => void, stop: () => void)  {
+        
+        // detect over down clicker misalignment
+        if (misalignmentValue > 1) {
+            // decrement counter
+            OOBCounter.current = OOBCounter.current - 1;
+            // invoke handleOnMouseUp function
+            handleOnMouseUp(start, stop);
+            // increment counter to immetate button click
+            OOBCounter.current = OOBCounter.current + 1;
+        };
+
+        // detect over up clicker misalignment
+        if (misalignmentValue < 0) {
+            // invoke handleOnMouseDown function
+            handleOnMouseDown(start, stop);
+        };
+    };
+
+
+
+    // long click handle when start recording
+    function handleOnMouseDown(start: () => void, stop: () => void) {
+
+        // down press is +1
+        OOBCounter.current = OOBCounter.current + 1;
+        // detect clicker misalignment and align
+        detectClickerMisalignment(OOBCounter.current, start, stop);
+        
         // record shielding
         if (isRecAvailable.current) {
 
@@ -33,32 +60,53 @@ function RecordMessage({ handleStop }: Props) {
             isUpped.current = true;
 
             // count overclicking
+            overClickerCount.current = overClickerCount.current + 1
 
-            // overclick shielding
+            // detect overclicking
+            if (overClickerCount.current > 1) {
+                // cancel recording sequence
+                clearTimeout(waitId500.current);
+                // return state to null to clear context
+                waitId500.current = null;
+                // reset oveclicker counter to single click
+                overClickerCount.current = 1;
+            };
 
-                // wait 500 ms
-                setTimeout(() => {
-                    // check if button was untouched
-                    if (isUpped.current) {
-                        // start time measuring
-                        lastTime.current = performance.now();
-                        // start recoeding
-                        start();
-                        // set flag to lower
-                        isUpped.current = false;
-                        console.log("start recording...");
-                    };
-                
-                // set timeout to 500 ms
-                } , TIME_TO_WAIT);
+            // wait 500 ms
+            waitId500.current = setTimeout(() => {
+
+                // check if button was untouched and protect from overclick
+                if (isUpped.current) {
+                    // start time measuring
+                    lastTime.current = performance.now();
+                    // start recoeding
+                    start();
+                    // set flag to lower
+                    isUpped.current = false;
+                    console.log("start recording...");
+                };
+                // reset oveclicker counter after 500 ms
+                overClickerCount.current = 0;
+                // clear itself
+                waitId500.current = null;
+            
+            // set timeout to 500 ms
+            } , TIME_TO_WAIT);
+
         };
     };
 
     // long click handle when stop recording
-    function handleOnMouseUp (stop: () => void) {
+    function handleOnMouseUp(start: () => void, stop: () => void) {
+
+        // up press is -1
+        OOBCounter.current = OOBCounter.current - 1;
+        // detect clicker misalignment and align
+        detectClickerMisalignment(OOBCounter.current, start, stop);
 
         // record shielding
         if (isRecAvailable.current) {
+
             // if the flag was lowered (recording started) then stop it
             if (!isUpped.current) {
 
@@ -67,15 +115,14 @@ function RecordMessage({ handleStop }: Props) {
                     // if no then shield recording
                     isRecAvailable.current = false;
 
-                    // wait for 1 sec
+                    // make recording min 1 sec long (depends how long rec lasted)
                     setTimeout(() => {
-                        console.log("recording 1 sec minimum");
-
-                        // then unshield recording (after 1 sec) and then stop
-                        isRecAvailable.current = true;
+                        console.log("recording minimum 1 sec");
+                        // then stop and unshield recording (after 1 sec) and then
                         stop();
+                        isRecAvailable.current = true;
 
-                        } , MIN_RECORD_TIME);
+                        } , (MIN_RECORD_TIME - (performance.now() - lastTime.current)));
                     
                 };
                 
@@ -103,8 +150,8 @@ function RecordMessage({ handleStop }: Props) {
                 // recording icon and message
                 <div className="mt-2">
                     <button
-                        onMouseDown={() => handleOnMouseDown(startRecording)} 
-                        onMouseUp={}
+                        onMouseDown={() => handleOnMouseDown(startRecording, stopRecording)} 
+                        onMouseUp={() => handleOnMouseUp(startRecording, stopRecording)}
                         className="bg-white p-4 rounded-full"
                     >
                         ICON
@@ -118,6 +165,6 @@ function RecordMessage({ handleStop }: Props) {
             )}
         />
     );
-};
+}
 
-export default RecordMessage;
+export default RecordMessage
