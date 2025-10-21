@@ -48,10 +48,13 @@ function RecordMessage({ handleStop }: Props) {
     // long click handle when start recording
     function handleOnMouseDown(start: () => void, stop: () => void) {
 
-        // down press is +1
-        OOBCounter.current = OOBCounter.current + 1;
-        // detect clicker misalignment and align
-        detectClickerMisalignment(OOBCounter.current, start, stop);
+        // record shielding
+        if (isRecAvailable.current) {
+            // down press is +1
+            OOBCounter.current = OOBCounter.current + 1;
+            // detect clicker misalignment and align
+            detectClickerMisalignment(OOBCounter.current, start, stop);
+        };
         
         // record shielding
         if (isRecAvailable.current) {
@@ -99,10 +102,13 @@ function RecordMessage({ handleStop }: Props) {
     // long click handle when stop recording
     function handleOnMouseUp(start: () => void, stop: () => void) {
 
-        // up press is -1
-        OOBCounter.current = OOBCounter.current - 1;
-        // detect clicker misalignment and align
-        detectClickerMisalignment(OOBCounter.current, start, stop);
+        // record shielding
+        if (isRecAvailable.current) {
+            // up press is -1
+            OOBCounter.current = OOBCounter.current - 1;
+            // detect clicker misalignment and align
+            detectClickerMisalignment(OOBCounter.current, start, stop);
+        };
 
         // record shielding
         if (isRecAvailable.current) {
@@ -133,8 +139,11 @@ function RecordMessage({ handleStop }: Props) {
                 };
             };
 
-            // set flag to lowered anyway
-            isUpped.current = false;
+
+                // set flag to lowered
+            if (isUpped.current) {
+                isUpped.current = false;
+            };
         };
     };
 
