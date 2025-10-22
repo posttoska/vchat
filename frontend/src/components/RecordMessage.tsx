@@ -60,8 +60,10 @@ function RecordMessage({ handleStop }: Props) {
         if (isRecAvailable.current) {
 
             // set flag to upped
-            isUpped.current = true;
-
+            if (!isUpped.current) { 
+                isUpped.current = true;
+            };
+            
             // count overclicking
             overClickerCount.current = overClickerCount.current + 1
 
@@ -138,9 +140,8 @@ function RecordMessage({ handleStop }: Props) {
                     stop();
                 };
             };
-
-
-                // set flag to lowered
+            
+            // set flag to lowered
             if (isUpped.current) {
                 isUpped.current = false;
             };
