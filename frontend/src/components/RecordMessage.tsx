@@ -14,6 +14,7 @@ function RecordMessage({ handleStop }: Props) {
     // flags 
     const isUpped = useRef<boolean>(false);
     const isRecAvailable = useRef<boolean>(true);
+    const isIgnored = useRef<boolean>(false);
     
     // counters (OOB - out of bounds)
     const overClickerCount = useRef<number>(0);
@@ -28,18 +29,15 @@ function RecordMessage({ handleStop }: Props) {
         
         // detect over down clicker misalignment
         if (misalignmentValue > 1) {
-            // decrement counter
-            OOBCounter.current = OOBCounter.current - 1;
             // invoke handleOnMouseUp function
             handleOnMouseUp(start, stop);
-            // increment counter to immetate button click
-            OOBCounter.current = OOBCounter.current + 1;
         };
 
         // detect over up clicker misalignment
         if (misalignmentValue < 0) {
-            // invoke handleOnMouseDown function
-            handleOnMouseDown(start, stop);
+            // invoke ignoring sequence and reset
+            isIgnored.current = true;
+            OOBCounter.current = 0;
         };
     };
 
@@ -97,7 +95,6 @@ function RecordMessage({ handleStop }: Props) {
             
             // set timeout to 500 ms
             } , TIME_TO_WAIT);
-
         };
     };
 
@@ -113,7 +110,7 @@ function RecordMessage({ handleStop }: Props) {
         };
 
         // record shielding
-        if (isRecAvailable.current) {
+        if (isRecAvailable.current && !isIgnored.current) {
 
             // if the flag was lowered (recording started) then stop it
             if (!isUpped.current) {
@@ -129,6 +126,9 @@ function RecordMessage({ handleStop }: Props) {
                         // then stop and unshield recording (after 1 sec) and then
                         stop();
                         isRecAvailable.current = true;
+                        // reset oob counter since user can do any actions while button is not available
+                        // so we need to reset the button
+                        OOBCounter.current = 0;
 
                         } , (MIN_RECORD_TIME - (performance.now() - lastTime.current)));
                     
@@ -146,6 +146,11 @@ function RecordMessage({ handleStop }: Props) {
                 isUpped.current = false;
             };
         };
+
+        // reset ignoring if it was ignored
+        if (isIgnored.current) {
+                isIgnored.current = false;
+            };
     };
 
     
