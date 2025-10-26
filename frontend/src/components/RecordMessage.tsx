@@ -13,6 +13,8 @@ function RecordMessage({ handleStop }: Props) {
     // constants
     const TIME_TO_WAIT = 500;
     const MIN_RECORD_TIME = 1000;
+    const MARGIN_THRESHOLD = 950;
+    const MARGIN_WAIT = 50;
 
     // flags (DCM stands for detect clicker misalignment)
     const isUpped = useRef<boolean>(false);
@@ -24,6 +26,7 @@ function RecordMessage({ handleStop }: Props) {
     const overClickerCount = useRef<number>(0);
     const OOBCounter = useRef<number>(0);
     const lastTime = useRef<number>(0);
+    const diff = useRef<number | null>(null);
 
     // states
     const waitId500 = useRef<number | null>(null);
@@ -46,7 +49,7 @@ function RecordMessage({ handleStop }: Props) {
             OOBCounter.current = 0;
         };
 
-        // ensure code above happened 
+        // ensure code above happened (but not while recording is pending)
         isDCMFired.current = true;
     };
 
@@ -72,7 +75,7 @@ function RecordMessage({ handleStop }: Props) {
             };
             
             // count overclicking
-            overClickerCount.current = overClickerCount.current + 1
+            overClickerCount.current = overClickerCount.current + 1;
 
             // detect overclicking
             if (overClickerCount.current > 1) {
@@ -132,10 +135,10 @@ function RecordMessage({ handleStop }: Props) {
             if (!isUpped.current) {
 
                 // count time diff
-                const diff = performance.now() - lastTime.current
+                diff.current = performance.now() - lastTime.current;
 
                 // make sure recording more than 1 second
-                if (diff < MIN_RECORD_TIME) {
+                if (diff.current < MIN_RECORD_TIME) {
                     // if no then shield recording
                     isRecAvailable.current = false;
 
@@ -149,13 +152,23 @@ function RecordMessage({ handleStop }: Props) {
                         stop();
                         // message 
                         REC.current = "OFF";
-
-                        isRecAvailable.current = true;
                         // reset oob counter since user can do any actions while button is not available
                         // so we need to reset the button
                         OOBCounter.current = 0;
 
-                        } , (MIN_RECORD_TIME - diff));
+                        // very specific bug handling when buttom is double down clicked and record is pending with small margin
+                        if (diff.current > MARGIN_THRESHOLD) {
+                            // release isRecAvailable a little bit later after pending is out
+                            setTimeout(() => { isRecAvailable.current = true}, MARGIN_WAIT );
+                        } else {
+                            // release isRecAvailable instantly after pending is out
+                            isRecAvailable.current = true;
+                        };
+
+                        // clear diff
+                        diff.current = null;
+
+                        } , (MIN_RECORD_TIME - diff.current));
                     
                 };
                 
