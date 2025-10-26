@@ -7,14 +7,18 @@ type Props = {
 
 function RecordMessage({ handleStop }: Props) {
 
+    // message
+    const [message, setMessage] = useState<string>("нажмите и удерживайте");
+    
     // constants
     const TIME_TO_WAIT = 500;
     const MIN_RECORD_TIME = 1000;
 
-    // flags 
+    // flags (DCM stands for detect clicker misalignment)
     const isUpped = useRef<boolean>(false);
-    const isRecAvailable = useRef<boolean>(true);
     const isIgnored = useRef<boolean>(false);
+    const isDCMFired = useRef<boolean>(false);
+    const isRecAvailable = useRef<boolean>(true);
     
     // counters (OOB - out of bounds)
     const overClickerCount = useRef<number>(0);
@@ -23,6 +27,8 @@ function RecordMessage({ handleStop }: Props) {
 
     // states
     const waitId500 = useRef<number | null>(null);
+    const REC = useRef<string>("OFF");
+
 
     // clicker misalignment function 
     function detectClickerMisalignment(misalignmentValue: number, start: () => void, stop: () => void)  {
@@ -39,6 +45,9 @@ function RecordMessage({ handleStop }: Props) {
             isIgnored.current = true;
             OOBCounter.current = 0;
         };
+
+        // ensure code above happened 
+        isDCMFired.current = true;
     };
 
 
@@ -55,7 +64,7 @@ function RecordMessage({ handleStop }: Props) {
         };
         
         // record shielding
-        if (isRecAvailable.current) {
+        if (isRecAvailable.current && isDCMFired.current) {
 
             // set flag to upped
             if (!isUpped.current) { 
@@ -84,6 +93,8 @@ function RecordMessage({ handleStop }: Props) {
                     lastTime.current = performance.now();
                     // start recoeding
                     start();
+                    // message 
+                    REC.current = "ON";
                     // set flag to lower
                     isUpped.current = false;
                     console.log("start recording...");
@@ -96,8 +107,13 @@ function RecordMessage({ handleStop }: Props) {
             // set timeout to 500 ms
             } , TIME_TO_WAIT);
         };
+
+        // forget about the code at the very start of this function
+        isDCMFired.current = false;
     };
 
+
+    
     // long click handle when stop recording
     function handleOnMouseUp(start: () => void, stop: () => void) {
 
@@ -110,27 +126,36 @@ function RecordMessage({ handleStop }: Props) {
         };
 
         // record shielding
-        if (isRecAvailable.current && !isIgnored.current) {
+        if (isRecAvailable.current && isDCMFired.current && !isIgnored.current) {
 
             // if the flag was lowered (recording started) then stop it
             if (!isUpped.current) {
 
+                // count time diff
+                const diff = performance.now() - lastTime.current
+
                 // make sure recording more than 1 second
-                if (performance.now() - lastTime.current < MIN_RECORD_TIME) {
+                if (diff < MIN_RECORD_TIME) {
                     // if no then shield recording
                     isRecAvailable.current = false;
+
+                    // message 
+                    REC.current = "PENDING";
 
                     // make recording min 1 sec long (depends how long rec lasted)
                     setTimeout(() => {
                         console.log("recording minimum 1 sec");
                         // then stop and unshield recording (after 1 sec) and then
                         stop();
+                        // message 
+                        REC.current = "OFF";
+
                         isRecAvailable.current = true;
                         // reset oob counter since user can do any actions while button is not available
                         // so we need to reset the button
                         OOBCounter.current = 0;
 
-                        } , (MIN_RECORD_TIME - (performance.now() - lastTime.current)));
+                        } , (MIN_RECORD_TIME - diff));
                     
                 };
                 
@@ -138,6 +163,8 @@ function RecordMessage({ handleStop }: Props) {
                 if (isRecAvailable.current) {
                     console.log("stop recording...");
                     stop();
+                    // message 
+                    REC.current = "OFF";
                 };
             };
             
@@ -151,9 +178,24 @@ function RecordMessage({ handleStop }: Props) {
         if (isIgnored.current) {
                 isIgnored.current = false;
             };
+        
+        // forget about the code at the very start of this function
+        isDCMFired.current = false;
     };
 
-    
+
+
+    // message
+    switch (true) {
+        case REC === "ON":
+            setMessage("запись");
+
+        case REC === "PENDING":
+            setMessage("кнопка недоступна, запись продлевается");
+
+        default:
+            setMessage("нажмите и удерживайте");
+    };
 
     return (
         // record message with react functions
@@ -172,10 +214,8 @@ function RecordMessage({ handleStop }: Props) {
                         ICON
                     </button>
                     <p className="mt-2 text-white font-light">
-                        {
-                            status === "recording" ? "запись" : "нажмите и удерживайте"
-                        }
-                        </p>
+                        {message}
+                    </p>
                 </div> 
             )}
         />
