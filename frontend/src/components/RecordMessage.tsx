@@ -71,7 +71,7 @@ function RecordMessage({ handleStop }: Props) {
 
             // set flag to upped
             if (!isUpped.current) { 
-                isUpped.current = true;
+                isUpped.current = true;                                                      
             };
             
             // count overclicking
@@ -178,6 +178,9 @@ function RecordMessage({ handleStop }: Props) {
                     stop();
                     // message 
                     REC.current = "OFF";
+
+                    // clear diff
+                    diff.current = null;
                 };
             };
             
