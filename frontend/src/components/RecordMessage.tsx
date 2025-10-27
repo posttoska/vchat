@@ -71,7 +71,7 @@ function RecordMessage({ handleStop }: Props) {
 
             // set flag to upped
             if (!isUpped.current) { 
-                isUpped.current = true;                                                      
+                isUpped.current = true;
             };
             
             // count overclicking
@@ -112,7 +112,9 @@ function RecordMessage({ handleStop }: Props) {
         };
 
         // forget about the code at the very start of this function
-        isDCMFired.current = false;
+        if (isDCMFired.current) {
+            isDCMFired.current = false;
+        };
     };
 
 
@@ -139,6 +141,7 @@ function RecordMessage({ handleStop }: Props) {
 
                 // make sure recording more than 1 second
                 if (diff.current < MIN_RECORD_TIME) {
+
                     // if no then shield recording
                     isRecAvailable.current = false;
 
@@ -155,6 +158,9 @@ function RecordMessage({ handleStop }: Props) {
                         // reset oob counter since user can do any actions while button is not available
                         // so we need to reset the button
                         OOBCounter.current = 0;
+
+                        // clear lsat time
+                        lastTime.current = 0;
 
                         // very specific bug handling when buttom is double down clicked and record is pending with small margin
                         if (diff.current > MARGIN_THRESHOLD) {
@@ -181,6 +187,9 @@ function RecordMessage({ handleStop }: Props) {
 
                     // clear diff
                     diff.current = null;
+
+                    // clear lsat time
+                    lastTime.current = 0;
                 };
             };
             
@@ -196,7 +205,9 @@ function RecordMessage({ handleStop }: Props) {
             };
         
         // forget about the code at the very start of this function
-        isDCMFired.current = false;
+        if (isDCMFired.current) {
+            isDCMFired.current = false;
+        };
     };
 
 
