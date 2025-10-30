@@ -1,4 +1,4 @@
-import { useState, useRef  } from "react";
+import { useState, useRef, useEffect  } from "react";
 import { ReactMediaRecorder } from "react-media-recorder";
 
 type Props = {
@@ -30,7 +30,7 @@ function RecordMessage({ handleStop }: Props) {
 
     // states
     const waitId500 = useRef<number | null>(null);
-    const REC = useRef<string>("OFF");
+    const [REC, setREC] = useState<"OFF" | "ON" | "PENDING">("OFF");
 
 
     // clicker misalignment function 
@@ -97,7 +97,8 @@ function RecordMessage({ handleStop }: Props) {
                     // start recoeding
                     start();
                     // message 
-                    REC.current = "ON";
+                    setREC("ON");
+
                     // set flag to lower
                     isUpped.current = false;
                     console.log("start recording...");
@@ -146,7 +147,7 @@ function RecordMessage({ handleStop }: Props) {
                     isRecAvailable.current = false;
 
                     // message 
-                    REC.current = "PENDING";
+                    setREC("PENDING");
 
                     // make recording min 1 sec long (depends how long rec lasted)
                     setTimeout(() => {
@@ -154,7 +155,8 @@ function RecordMessage({ handleStop }: Props) {
                         // then stop and unshield recording (after 1 sec) and then
                         stop();
                         // message 
-                        REC.current = "OFF";
+                        setREC("OFF");
+
                         // reset oob counter since user can do any actions while button is not available
                         // so we need to reset the button
                         OOBCounter.current = 0;
@@ -182,8 +184,9 @@ function RecordMessage({ handleStop }: Props) {
                 if (isRecAvailable.current) {
                     console.log("stop recording...");
                     stop();
+
                     // message 
-                    REC.current = "OFF";
+                    setREC("OFF");
 
                     // clear diff
                     diff.current = null;
@@ -210,19 +213,21 @@ function RecordMessage({ handleStop }: Props) {
         };
     };
 
-
-
     // message
-    switch (true) {
-        case REC === "ON":
-            setMessage("запись");
+    useEffect( () => {
+        switch (REC) {
+            case "ON":
+                setMessage("запись");
+                break;
 
-        case REC === "PENDING":
-            setMessage("кнопка недоступна, запись продлевается");
+            case "PENDING":
+                setMessage("кнопка недоступна, запись продлевается");
+                break;
 
-        default:
-            setMessage("нажмите и удерживайте");
-    };
+            default:
+                setMessage("нажмите и удерживайте");
+            };
+    }, [REC]);
 
     return (
         // record message with react functions
@@ -247,6 +252,6 @@ function RecordMessage({ handleStop }: Props) {
             )}
         />
     );
-}
+};
 
 export default RecordMessage
