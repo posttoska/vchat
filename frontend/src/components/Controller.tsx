@@ -1,7 +1,9 @@
+
 import {useState} from 'react';
 import Title from './Title';
 import RecordMessage from './RecordMessage';
 import RecordMessage2 from './RecordMessage2';
+import axios from 'axios';
 
 
 function Controller() {
@@ -9,16 +11,60 @@ function Controller() {
     const [isLoading, setisLoading] = useState(false);
     const [messages, setMessages] = useState<any[]>([]);
 
-    const [blob, setBlob] = useState("");
 
     const createBlobUrl = (data: any) => {
-
+        const innerBlob = new Blob([data], { type: "audio/mpeg" });
+        const url = window.URL.createObjectURL(innerBlob);
+        return url;
     };
 
     const handleStop = async (blobUrl: string) => {
-        console.log(blobUrl);
-        setBlob(blobUrl);
-    }
+        setisLoading(true);
+
+        // append recorded message to messages
+        const myMessage = { sender: "me", blobUrl: blobUrl };
+        const messagesArr = {...messages, myMessage};
+
+        // 1st .then: convert response to a blob
+        // 2nd .then: use the blob to send it to api endpoint
+        // 3rd .then: handle server response
+
+        fetch(blobUrl)
+            .then( (res) => res.blob())
+            .then(async (blob) => {
+
+                // construct audio to send a file
+                const formData = new FormData();
+                formData.append("file", blob, "myFile.wav");
+
+                // send form data to api endpoint
+                await axios.post("http://127.0.0.1:8000/post-audio",
+                      formData,
+                      {headers: {"Content-Type": "audio.mpeg"},
+                      responseType: "arraybuffer",
+                })
+                .then((res: any) => {
+                    // get responsed blob
+                    const blob = res.data;
+                    const audio = new Audio();
+                    // create audio from that
+                    audio.src = createBlobUrl(blob);
+
+                    // append model's answer to message context 
+                    const modelMessage = { sender: "model", blobUrl: audio.src };
+                    messagesArr.push(modelMessage);
+
+                    // 
+                    setMessages(messagesArr);
+
+                })
+                .catch((err) => {});
+            
+
+            });
+
+        setisLoading(false);
+    };
 
     return (
         
