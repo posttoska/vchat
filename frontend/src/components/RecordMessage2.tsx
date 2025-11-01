@@ -16,7 +16,7 @@ function RecordMessage2({ handleStop }: Props) {
     // flags
     const isLongPress = useRef<boolean>(false);
 
-
+    // timer start
     function startPressTimer(start: () => void, stop: () => void, status: string) {
     
         // start timer
@@ -27,8 +27,6 @@ function RecordMessage2({ handleStop }: Props) {
 
             }, timeToWait);
     };
-
-
 
     // click down
     function handleOnMouseDown(start: () => void, stop: () => void, status: string) {
@@ -52,8 +50,6 @@ function RecordMessage2({ handleStop }: Props) {
         clearTimeout(timerRef.current);
 
     };
-
-
 
     return (
         // record message with react functions

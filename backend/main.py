@@ -14,7 +14,6 @@ from functions.gemini_system_prompt import SYSTEM_PROMPT
 from functions.text_to_speech import el_tts
 import google.generativeai as genai
 
-
 # custom function imports
 from functions.openai_request import stt_convert
 
@@ -151,9 +150,6 @@ async def get_chat_response(prompt: str) -> str:
         # append user and model context 
         chat_history.append({"role": "user", "parts": [prompt]})
         chat_history.append({"role": "model", "parts": [chat_response.text]})
-        
-        # DELETE THIS AFTER
-        print(chat_history)
 
         # forget old elements
         if len(chat_history) > 2*context_window:

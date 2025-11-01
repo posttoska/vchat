@@ -2,23 +2,23 @@
 
     ├─ backend
         ├─ functions
-	    ├─ gemini_system_prompt.py
-	    ├─ openai_request.py
-	    ├─ text_to_speech.py
-	├─ .gitignore
-	├─ main.py
-	├─ posttoska_test.mp3
-	├─ stored_data.json
+            ├─ gemini_system_prompt.py
+            ├─ openai_request.py
+            ├─ text_to_speech.py
+        ├─ .gitignore
+        ├─ main.py
+        ├─ posttoska_test.mp3
+        ├─ stored_data.json
 
     ├─ frontend
         ├─ node_modules
 	├─ src
 	    ├─ components
-		├─ Controller.tsx
-		├─ Title.tsx
-	    ├─ App.tsx
-	    ├─ index.css
-	    ├─ main.tsx
+            ├─ Controller.tsx
+            ├─ Title.tsx
+            ├─ App.tsx
+            ├─ index.css
+            ├─ main.tsx
 	├─ .gitignore
 	├─ eslint.config.js
 	├─ index.html

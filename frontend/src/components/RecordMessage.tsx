@@ -4,9 +4,10 @@ import RecordIcon from "./RecordIcon";
 
 type Props = {
     handleStop: any;
+    handleStart: any;
 };
 
-function RecordMessage({ handleStop }: Props) {
+function RecordMessage({ handleStart, handleStop }: Props) {
 
     // message
     const [message, setMessage] = useState<string>("нажмите и удерживайте");
@@ -33,7 +34,6 @@ function RecordMessage({ handleStop }: Props) {
     const waitId500 = useRef<number | null>(null);
     const [REC, setREC] = useState<"OFF" | "ON" | "PENDING">("OFF");
 
-
     // clicker misalignment function 
     function detectClickerMisalignment(misalignmentValue: number, start: () => void, stop: () => void)  {
         
@@ -53,8 +53,6 @@ function RecordMessage({ handleStop }: Props) {
         // ensure code above happened (but not while recording is pending)
         isDCMFired.current = true;
     };
-
-
 
     // long click handle when start recording
     function handleOnMouseDown(start: () => void, stop: () => void) {
@@ -119,8 +117,6 @@ function RecordMessage({ handleStop }: Props) {
         };
     };
 
-
-    
     // long click handle when stop recording
     function handleOnMouseUp(start: () => void, stop: () => void) {
 
@@ -234,7 +230,8 @@ function RecordMessage({ handleStop }: Props) {
         // record message with react functions
         <ReactMediaRecorder 
             audio 
-            onStop={handleStop} 
+            onStart={handleStart}
+            onStop={handleStop}
             render={({ status, startRecording, stopRecording }) => (
                 
                 // recording icon and message
