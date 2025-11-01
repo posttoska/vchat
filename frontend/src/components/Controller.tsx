@@ -17,6 +17,15 @@ function Controller() {
         return url;
     };
 
+    // pause audio button
+    const pauseAudio = () => {
+        if (currentAudio) {
+
+            currentAudio.pause();
+
+        };
+    };
+
     // pause audio if record started
     const handleStart = () => {
         if (currentAudio) {
@@ -33,7 +42,7 @@ function Controller() {
 
         // append recorded message to messages
         const myMessage = { sender: "me", blobUrl: blobUrlLocal };
-        const messagesArr = {...messages, myMessage};
+        const messagesArr = [...messages, myMessage];
 
         // 1st .then: convert request to a blob
         // 2nd .then: use the blob to send it to api endpoint
@@ -70,6 +79,9 @@ function Controller() {
                     // lower the flag and play audio
                     setIsLoading(false);
                     audio.play();
+                    
+                    // track this audio to have ability to stop it
+                    setCurrentAudio(audio);
 
                 })
                 .catch((err) => {
@@ -95,6 +107,46 @@ function Controller() {
                     src="/vladislaviy.png"
                     />
                 </div>
+
+                {/* conversation */}
+                <div className='mt-5 px-5'>
+                    
+                    {messages.map((audio, index) => {
+                            return (
+                                <div 
+                                key={index + audio.sender} 
+                                className={"fles flex-col " + 
+                                    (audio.sender == "model" && "flex items-end")
+                                }
+                            >
+                            {/* sender */}
+                            <div className="nt-4">
+                                    <p className={audio.sender == "model" ? "text-right mr-2 italic text-green-500" : "ml-2 italic text-blue-500"}>
+                                        {audio.sender}
+                                    </p>
+
+                                {/* audio message */}
+                                <audio src={audio.blobUrl} className="apperance-none" controls />
+                                </div>
+
+                            </div>
+                        );
+                    })}
+
+                    {messages.length == 0 && !isLoading && (
+                        <div className="text-center font-light italic mt-10">
+                            Поговори с Владиславием...
+                        </div>
+                    )}
+
+                    {isLoading && (
+                        <div className="text-center font-light italic mt-10 amimate-pulse">
+                            Дай подумать...
+                        </div>
+                    )}
+                </div>
+                
+
 
                 {/* recorder */}
                 <div className='fixed bottom-0 w-full py-6 border-t text-center bg-gradient-to-r from-red-500 to-violet-600'>
