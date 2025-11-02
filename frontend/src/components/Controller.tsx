@@ -17,14 +17,6 @@ function Controller() {
         return url;
     };
 
-    // pause audio button
-    const pauseAudio = () => {
-        if (currentAudio) {
-
-            currentAudio.pause();
-
-        };
-    };
 
     // pause audio if record started
     const handleStart = () => {
@@ -94,10 +86,12 @@ function Controller() {
     return (
         
         <div>
-            <div className='h-screen overflow-y-hidden'>
+            <div className='h-screen flex flex-col'>
 
                 {/* title */}
-                <Title setMessages={setMessages} />
+                    <div>
+                        <Title setMessages={setMessages} stopModelAnswer={handleStart}/>
+                    </div>
 
                 {/* image */}
                 <div className='flex items-center justify-center p-2'>
@@ -109,7 +103,7 @@ function Controller() {
                 </div>
 
                 {/* conversation */}
-                <div className='mt-5 px-5'>
+                <div className='flex-1 overflow-y-auto pb-5 pt-5'>
                     
                     {messages.map((audio, index) => {
                             return (
@@ -122,7 +116,7 @@ function Controller() {
                             {/* sender */}
                             <div className="nt-4">
                                     <p className={audio.sender == "model" ? "text-right mr-2 italic text-green-500" : "ml-2 italic text-blue-500"}>
-                                        {audio.sender}
+                                        {audio.sender == "model" ? "Владиславий" : "Я"}
                                     </p>
 
                                 {/* audio message */}
@@ -146,10 +140,8 @@ function Controller() {
                     )}
                 </div>
                 
-
-
                 {/* recorder */}
-                <div className='fixed bottom-0 w-full py-6 border-t text-center bg-gradient-to-r from-red-500 to-violet-600'>
+                <div className='bottom-0 w-full py-6 border-t text-center bg-gradient-to-r from-red-500 to-violet-600'>
                     <div className='flex justify-center items-center w-full'>
                         <RecordMessage handleStart={handleStart} handleStop={handleStop}/>
                     </div>
